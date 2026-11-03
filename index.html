@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GPT-2 Local · 在本地跑通 2019 年的 GPT-2</title>
+<meta name="description" content="在自己的电脑上离线运行 OpenAI GPT-2（124M）：纯 CPU、不联网、零框架，网页 / 命令行 / 交互续写三种入口。">
+<!-- ============================================================
+     项目介绍页 · 单文件，无外部依赖。浏览器直接打开即可预览；
+     GitHub Pages 直接指向本仓库根目录即可上线。
+     ============================================================ -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#129504;</text></svg>">
+<style>
+  :root{
+    --bg:#0a0c10; --bg2:#0d1017; --surface:#11151d; --surface2:#151a24;
+    --line:#1e2531; --line2:#2a3341;
+    --ink:#e9edf4; --sub:#8d98ad; --dim:#5d6779;
+    --accent:#5fd3c4; --accent2:#7f8cf9; --warn:#f0b45f;
+    --mono:"JetBrains Mono","SF Mono",Consolas,"Cascadia Code",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 var(--sans);
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(900px 500px at 15% -10%, rgba(95,211,196,.12), transparent 60%),
+      radial-gradient(800px 500px at 85% 0%, rgba(127,140,249,.10), transparent 60%);
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:64px 64px;
+    mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 65%);
+    -webkit-mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 65%);
+  }
+  .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:0 24px}
+
+  /* ---------- nav ---------- */
+  nav{
+    position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+    background:rgba(10,12,16,.72);border-bottom:1px solid var(--line);
+  }
+  nav .inner{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px}
+  .logo{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.01em;font-size:15px}
+  .logo .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent)}
+  .logo span.muted{color:var(--dim);font-weight:500;font-size:12.5px;margin-left:2px;font-family:var(--mono)}
+  nav .links{margin-left:auto;display:flex;align-items:center;gap:22px}
+  nav a.txt{color:var(--sub);text-decoration:none;font-size:14px;transition:.18s}
+  nav a.txt:hover{color:var(--ink)}
+  .gh-btn{
+    display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+    background:var(--surface2);border:1px solid var(--line2);color:var(--ink);
+    padding:7px 14px;border-radius:9px;font-size:13.5px;font-weight:600;transition:.18s;
+  }
+  .gh-btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+  .gh-btn svg{width:16px;height:16px;fill:currentColor}
+  @media(max-width:720px){nav .links a.txt{display:none}}
+
+  /* ---------- hero ---------- */
+  header.hero{padding:84px 0 64px}
+  .chip{
+    display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;
+    color:var(--accent);background:rgba(95,211,196,.08);border:1px solid rgba(95,211,196,.25);
+    padding:5px 12px;border-radius:999px;letter-spacing:.02em;
+  }
+  .chip .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+  h1{
+    font-size:clamp(34px,5.4vw,58px);line-height:1.12;letter-spacing:-.03em;
+    margin:22px 0 18px;font-weight:800;
+  }
+  h1 .grad{
+    background:linear-gradient(100deg,var(--accent),var(--accent2) 70%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .lead{color:var(--sub);font-size:17.5px;max-width:640px;margin:0 0 32px}
+  .lead code{font-family:var(--mono);font-size:.9em;color:var(--ink);
+    background:var(--surface2);padding:2px 6px;border-radius:5px;border:1px solid var(--line)}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .btn{
+    display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:650;
+    font-size:15px;padding:12px 22px;border-radius:11px;transition:.18s;
+  }
+  .btn.primary{background:linear-gradient(180deg,#6ee0d0,#4bc4b5);color:#05201d;box-shadow:0 8px 26px -10px rgba(95,211,196,.65)}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px -12px rgba(95,211,196,.75)}
+  .btn.ghost{border:1px solid var(--line2);color:var(--ink);background:var(--surface)}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .btn svg{width:17px;height:17px;fill:currentColor}
+
+  /* ---------- stats ---------- */
+  .stats{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:52px;
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line);
+  }
+  .stat{background:var(--surface);padding:18px 20px}
+  .stat .k{font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:-.02em}
+  .stat .k em{color:var(--accent);font-style:normal}
+  .stat .v{color:var(--dim);font-size:12.5px;margin-top:3px}
+  @media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- terminal ---------- */
+  .terminal{
+    margin:44px 0 0;background:linear-gradient(180deg,var(--surface2),var(--surface));
+    border:1px solid var(--line2);border-radius:14px;overflow:hidden;
+    box-shadow:0 30px 60px -30px #000;
+  }
+  .term-bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .term-bar i{width:11px;height:11px;border-radius:50%;display:block}
+  .term-bar i:nth-child(1){background:#f2635f}.term-bar i:nth-child(2){background:#f0b44c}.term-bar i:nth-child(3){background:#5fc46a}
+  .term-bar .t{margin-left:8px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+  .term-body{padding:18px 20px;font-family:var(--mono);font-size:13.2px;line-height:1.85;white-space:pre-wrap;word-break:break-word}
+  .term-body .c{color:var(--accent)}
+  .term-body .o{color:var(--ink)}
+  .term-body .m{color:var(--dim)}
+  .term-body .p{color:var(--accent2)}
+
+  /* ---------- sections ---------- */
+  section{padding:78px 0}
+  .sec-head{margin-bottom:38px}
+  .sec-head .num{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.08em}
+  h2{font-size:clamp(24px,3.4vw,32px);letter-spacing:-.02em;margin:10px 0 8px;font-weight:750}
+  .sec-head p{color:var(--sub);margin:0;font-size:15.5px;max-width:600px}
+
+  /* ---------- features ---------- */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}}
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;
+    transition:.2s;position:relative;overflow:hidden;
+  }
+  .card:hover{border-color:var(--line2);transform:translateY(-3px);background:var(--surface2)}
+  .card:hover::after{opacity:1}
+  .card::after{
+    content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;opacity:0;transition:.2s;
+    background:radial-gradient(300px 120px at 50% -20%,rgba(95,211,196,.13),transparent 70%);
+  }
+  .card .ico{
+    width:36px;height:36px;border-radius:10px;display:grid;place-items:center;margin-bottom:14px;
+    background:rgba(95,211,196,.1);border:1px solid rgba(95,211,196,.22);font-size:17px;
+  }
+  .card.alt .ico{background:rgba(127,140,249,.1);border-color:rgba(127,140,249,.22)}
+  .card h3{margin:0 0 7px;font-size:15.5px;letter-spacing:-.01em}
+  .card p{margin:0;color:var(--sub);font-size:14px;line-height:1.65}
+  .card code{font-family:var(--mono);font-size:.88em;color:var(--accent);
+    background:rgba(95,211,196,.08);padding:1.5px 5px;border-radius:4px}
+
+  /* ---------- steps ---------- */
+  .steps{display:flex;flex-direction:column;gap:20px}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:18px;align-items:start}
+  .step .n{
+    width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+    font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);
+    background:rgba(95,211,196,.09);border:1px solid rgba(95,211,196,.22);
+  }
+  .step h4{margin:2px 0 10px;font-size:15.5px}
+  .step .note{color:var(--dim);font-size:13.5px;margin:8px 0 0}
+  .code{
+    position:relative;background:var(--bg2);border:1px solid var(--line);border-radius:11px;
+    padding:14px 16px;font-family:var(--mono);font-size:13.2px;line-height:1.8;
+    overflow-x:auto;color:#c7d0de;
+  }
+  .code .cmt{color:var(--dim)}
+  .code .hl{color:var(--accent)}
+  .copy{
+    position:absolute;top:9px;right:9px;background:var(--surface2);border:1px solid var(--line2);
+    color:var(--sub);font-size:11.5px;font-family:var(--mono);padding:4px 9px;border-radius:7px;
+    cursor:pointer;transition:.16s;opacity:0;
+  }
+  .code:hover .copy{opacity:1}
+  .copy:hover{color:var(--accent);border-color:var(--accent)}
+  .copy.done{color:var(--accent);border-color:var(--accent)}
+
+  /* ---------- table ---------- */
+  .spec{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .spec th,.spec td{padding:12px 16px;text-align:left;font-size:14.2px;border-bottom:1px solid var(--line)}
+  .spec tr:last-child td{border-bottom:0}
+  .spec th{color:var(--dim);font-weight:600;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;background:var(--surface)}
+  .spec td:first-child{color:var(--sub);width:38%}
+  .spec td:last-child{font-family:var(--mono);font-size:13.4px}
+  .spec tbody tr{background:var(--bg2)}
+  .spec tbody tr:hover{background:var(--surface)}
+
+  /* ---------- limits ---------- */
+  .limits{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.limits{grid-template-columns:1fr}}
+  .limit{display:flex;gap:12px;padding:16px 18px;background:rgba(240,180,95,.05);
+    border:1px solid rgba(240,180,95,.18);border-radius:12px}
+  .limit .b{color:var(--warn);font-size:15px;line-height:1.3}
+  .limit p{margin:0;font-size:14px;color:var(--sub)}
+  .limit p b{color:var(--ink);font-weight:600}
+
+  /* ---------- final cta ---------- */
+  .final{
+    margin:0 0 80px;padding:48px 40px;border-radius:18px;text-align:center;
+    background:linear-gradient(160deg,rgba(95,211,196,.09),rgba(127,140,249,.07));
+    border:1px solid var(--line2);
+  }
+  .final h2{margin:0 0 10px}
+  .final p{color:var(--sub);margin:0 0 26px;font-size:15.5px}
+
+  footer{border-top:1px solid var(--line);padding:28px 0 44px}
+  footer .inner{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+    color:var(--dim);font-size:13px}
+  footer a{color:var(--sub);text-decoration:none}
+  footer a:hover{color:var(--accent)}
+  .mono{font-family:var(--mono)}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <div class="logo"><span class="dot"></span>GPT-2 <span class="muted">/ local</span></div>
+    <div class="links">
+      <a class="txt" href="#features">特性</a>
+      <a class="txt" href="#start">快速开始</a>
+      <a class="txt" href="#spec">规格</a>
+      <a class="txt" href="#limits">限制</a>
+      <a class="gh-btn" href="https://github.com/linyuanxuan/RunGPT-2" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <span class="chip"><span class="pulse"></span>2019-02 · OpenAI GPT-2 small · 124M</span>
+    <h1>把 2019 年的 GPT-2<br><span class="grad">搬进你自己的电脑</span></h1>
+    <p class="lead">
+      纯 CPU 推理，不需要显卡，不联网，不调任何 API。权重 523 MB 躺在本地磁盘上，
+      一个 <code>python app.py</code> 就能打开界面开始续写。
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/linyuanxuan/RunGPT-2" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        在 GitHub 上查看
+      </a>
+      <a class="btn ghost" href="#start">快速开始 →</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">124<em>M</em></div><div class="v">参数量 · 12 层 12 头</div></div>
+      <div class="stat"><div class="k">523<em>MB</em></div><div class="v">权重 · fp32 safetensors</div></div>
+      <div class="stat"><div class="k">1024</div><div class="v">上下文 tokens</div></div>
+      <div class="stat"><div class="k">~2<em>tok/s</em></div><div class="v">2 核 CPU 实测</div></div>
+    </div>
+
+    <div class="terminal">
+      <div class="term-bar"><i></i><i></i><i></i><span class="t">powershell — gpt2-local</span></div>
+      <div class="term-body"><span class="c">$</span> <span class="o">python cli.py "The best part of the 1990s was" -n 40 -s 7</span>
+<span class="m">Loading weights: 100%|##########| 148/148 [00:10&lt;00:00]</span>
+<span class="p">The best part of the 1990s was</span><span class="o"> that when we launched "Pilot," you could
+really see what a big deal it would have been. It's hard to remember,
+but in 1993 or 1994 I think people understood why everyone loved this</span>
+
+<span class="m">[ 40 tokens / 21.0s = 1.9 tok/s | 124M params | CPU ]</span></div>
+    </div>
+  </header>
+
+  <section id="features">
+    <div class="sec-head reveal">
+      <div class="num">01 / FEATURES</div>
+      <h2>够小，够完整</h2>
+      <p>不到 500 行代码，把加载、推理、界面全部打通。依赖只有 torch 和 transformers。</p>
+    </div>
+    <div class="grid">
+      <div class="card reveal"><div class="ico">◍</div><h3>网页 UI，零框架</h3>
+        <p>用标准库 <code>http.server</code> 写服务，HTML 内嵌。没有 Flask，没有 Gradio，装完 torch 就能跑。</p></div>
+      <div class="card alt reveal"><div class="ico">⌘</div><h3>命令行单次生成</h3>
+        <p><code>cli.py "prompt" -n 60 -t 0.9 -s 42</code>，长度、温度、top-k、top-p、种子全可调，可一次出多个候选。</p></div>
+      <div class="card reveal"><div class="ico">↻</div><h3>交互式续写</h3>
+        <p><code>chat.py</code> 维护上下文，边写边接。<code>/len</code> <code>/temp</code> <code>/seed</code> 随时改参数。</p></div>
+      <div class="card alt reveal"><div class="ico">◎</div><h3>可复现</h3>
+        <p>固定 seed 就是固定输出。做采样策略对比、写文章举例时不用靠运气。</p></div>
+      <div class="card reveal"><div class="ico">↓</div><h3>权重脚本</h3>
+        <p><code>download_model.py</code> 一键拉权重，支持换 <code>gpt2-medium</code> 等更大规格。</p></div>
+      <div class="card alt reveal"><div class="ico">⚡</div><h3>纯 CPU</h3>
+        <p>不需要 CUDA。2 核机器能跑，4 核以上明显更顺；内存在 800 MB 量级。</p></div>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="sec-head reveal">
+      <div class="num">02 / QUICKSTART</div>
+      <h2>三步跑起来</h2>
+      <p>第一次要下 523 MB 权重，之后彻底离线。</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="n">1</div>
+        <div>
+          <h4>拉代码 + 建环境</h4>
+<div class="code"><button class="copy">copy</button>git clone <span class="hl">https://github.com/linyuanxuan/RunGPT-2.git</span>
+cd RunGPT-2
+python -m venv venv
+venv\Scripts\activate          <span class="cmt"># macOS / Linux: source venv/bin/activate</span>
+pip install torch transformers</div>
+          <p class="note">国内镜像：<span class="mono">-i https://mirrors.aliyun.com/pypi/simple</span>（清华源目前缺 cp313 的 torch wheel）</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="n">2</div>
+        <div>
+          <h4>下载权重</h4>
+<div class="code"><button class="copy">copy</button>python download_model.py        <span class="cmt"># gpt2 124M，约 523 MB</span></div>
+          <p class="note">国内可先设 <span class="mono">HF_ENDPOINT=https://hf-mirror.com</span> 走镜像</p>
+        </div>
+      </div>
+      <div class="step reveal">
+        <div class="n">3</div>
+        <div>
+          <h4>开跑</h4>
+<div class="code"><button class="copy">copy</button>python app.py       <span class="cmt"># 网页版 → http://127.0.0.1:7860</span>
+python chat.py      <span class="cmt"># 终端交互续写</span></div>
+          <p class="note">Windows 也可直接双击 <span class="mono">启动网页版.bat</span>；首次启动等 40–60 秒加载权重，窗口没反应是正常的</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="spec">
+    <div class="sec-head reveal">
+      <div class="num">03 / SPEC</div>
+      <h2>它到底是什么</h2>
+      <p>2019 年 2 月的原版 GPT-2 small。没有微调，没有对齐，没有系统提示词。</p>
+    </div>
+    <table class="spec reveal">
+      <thead><tr><th>项目</th><th>规格</th></tr></thead>
+      <tbody>
+        <tr><td>发布</td><td>2019-02 · OpenAI</td></tr>
+        <tr><td>架构</td><td>GPT-2 small, decoder-only Transformer</td></tr>
+        <tr><td>参数量</td><td>124M（12 层 · 12 头 · 768 维）</td></tr>
+        <tr><td>上下文</td><td>1024 tokens</td></tr>
+        <tr><td>词表</td><td>50257 BPE</td></tr>
+        <tr><td>权重</td><td>523 MB · safetensors · fp32</td></tr>
+        <tr><td>推理后端</td><td>PyTorch CPU（无 CUDA 依赖）</td></tr>
+        <tr><td>实测速度</td><td>约 2 tok/s @ 2 核</td></tr>
+        <tr><td>许可证</td><td>代码 MIT · 权重归 OpenAI</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="limits">
+    <div class="sec-head reveal">
+      <div class="num">04 / LIMITS</div>
+      <h2>先说清楚它做不到什么</h2>
+      <p>这些不是 bug，是 2019 年的真实水位。</p>
+    </div>
+    <div class="limits">
+      <div class="limit reveal"><div class="b">✕</div><p><b>中文基本不可用</b><br>纯英文模型，中文输入输出乱码，别拿它测中文能力。</p></div>
+      <div class="limit reveal"><div class="b">✕</div><p><b>不会回答问题</b><br>它是续写模型，问它首都在哪，它只会写出看起来像文本的字符串。</p></div>
+      <div class="limit reveal"><div class="b">✕</div><p><b>没有指令跟随</b><br>没有 RLHF、没有系统提示词，不会「帮我总结一下」。</p></div>
+      <div class="limit reveal"><div class="b">✕</div><p><b>CPU 上很慢</b><br>2 tok/s，长文本要等几分钟。速度和核数直接相关。</p></div>
+    </div>
+  </section>
+
+  <div class="final reveal">
+    <h2>想看代码？</h2>
+    <p>仓库包含全部推理代码、权重下载脚本和这份介绍页，MIT 许可。</p>
+    <a class="btn primary" href="https://github.com/linyuanxuan/RunGPT-2" target="_blank" rel="noopener">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      打开 GitHub 仓库
+    </a>
+  </div>
+
+  <footer>
+    <div class="inner">
+      <span>GPT-2 Local — 一个关于 2019 年的小实验。</span>
+      <span><a href="https://github.com/linyuanxuan/RunGPT-2" target="_blank" rel="noopener">GitHub</a> · <a href="https://github.com/linyuanxuan/RunGPT-2/issues" target="_blank" rel="noopener">Issues</a> · MIT</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+  // 复制代码
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var box = btn.parentElement.cloneNode(true);
+      var b = box.querySelector('.copy'); if (b) b.remove();
+      var text = box.innerText.replace(/\s+$/,'');
+      var done = function(){
+        btn.textContent = 'copied'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = 'copy'; btn.classList.remove('done'); }, 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta); done();
+      }
+    });
+  });
+
+  // 滚动渐入
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(function(el, i){
+    el.style.transitionDelay = (Math.min(i % 6, 5) * 45) + 'ms';
+    io.observe(el);
+  });
+</script>
+</body>
+</html>
