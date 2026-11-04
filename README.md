@@ -155,12 +155,40 @@ RunGPT-2/
 ├── cli.py              # 命令行单次生成
 ├── chat.py             # 终端交互续写
 ├── download_model.py   # 权重下载（huggingface_hub snapshot）
-├── index.html          # 项目介绍页（GitHub Pages 用）
+├── index.html          # 项目介绍页（GitHub Pages / Cloudflare Pages）
+├── _headers            # Cloudflare Pages 响应头配置
 ├── 启动网页版.bat       # Windows 双击启动
 └── README.md
 ```
 
 代码与权重分离：权重默认落在 `../models/gpt2`，通过 `GPT2_MODEL_DIR` 环境变量可指向任何位置。
+
+## 部署介绍页
+
+`index.html` 是纯静态单文件，无构建步骤，任何静态托管都能直接放。
+
+### Cloudflare Pages（推荐，支持自定义域名）
+
+1. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
+2. 选择本仓库，分支 `main`
+3. 构建设置：
+
+   | 项 | 值 |
+   |---|---|
+   | Framework preset | **None** |
+   | Build command | 留空 |
+   | Build output directory | `/` |
+
+4. Save and Deploy。之后每次 push 到 `main` 自动重新部署
+5. 绑定域名：项目 → **Custom domains** → 输入子域（如 `gpt2.example.com`）→ 域名也在 Cloudflare 时 DNS 记录自动创建，几分钟内签发证书
+
+仓库根目录的 `_headers` 会被 CF Pages 识别，用于设置 `index.html` 的短缓存与安全响应头。
+
+### GitHub Pages
+
+Settings → Pages → Source 选 `main` + `/ (root)`，站点即 `https://linyuanxuan.github.io/RunGPT-2/`。
+
+> 注意：Pages 只负责托管这份介绍页，不会运行 `app.py`。真正的 GPT-2 推理始终在你本机，这里没有后端。
 
 ## 已知限制
 

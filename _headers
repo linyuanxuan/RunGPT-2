@@ -1,0 +1,9 @@
+# 单文件介绍页：HTML 变化时快速失效，避免更新后看到旧版本
+/index.html
+  Cache-Control: public, max-age=300, must-revalidate
+
+# 其余静态资源
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
