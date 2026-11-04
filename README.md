@@ -3,12 +3,13 @@
 > 在自己的电脑上离线运行 OpenAI GPT-2（124M）——纯 CPU、无需显卡、不联网、不调 API。
 
 [![GitHub](https://img.shields.io/badge/GitHub-linyuanxuan%2FRunGPT-2-181717?logo=github)](https://github.com/linyuanxuan/RunGPT-2)
+[![Live](https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E4%BB%8B%E7%BB%8D%E9%A1%B5-gpt2local.linyuanxuan.top-5fd3c4)](https://gpt2local.linyuanxuan.top)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-CPU-EE4C2C?logo=pytorch&logoColor=white)
 ![Model](https://img.shields.io/badge/model-GPT--2%20124M-4fd1c5)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**介绍页（GitHub Pages）**：https://linyuanxuan.github.io/RunGPT-2/
+**在线介绍页**：https://gpt2local.linyuanxuan.top
 
 ---
 
@@ -167,7 +168,9 @@ RunGPT-2/
 
 `index.html` 是纯静态单文件，无构建步骤，任何静态托管都能直接放。
 
-### Cloudflare Pages（推荐，支持自定义域名）
+**当前线上地址**：https://gpt2local.linyuanxuan.top （Cloudflare Pages + 自定义域名）
+
+### Cloudflare Pages
 
 1. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
 2. 选择本仓库，分支 `main`
@@ -180,15 +183,15 @@ RunGPT-2/
    | Build output directory | `/` |
 
 4. Save and Deploy。之后每次 push 到 `main` 自动重新部署
-5. 绑定域名：项目 → **Custom domains** → 输入子域（如 `gpt2.example.com`）→ 域名也在 Cloudflare 时 DNS 记录自动创建，几分钟内签发证书
+5. 绑定域名：项目 → **Custom domains** → 输入 `gpt2local.linyuanxuan.top` → 域名同在一个 Cloudflare 账号下时 DNS 记录自动创建，几分钟内签发证书
 
 仓库根目录的 `_headers` 会被 CF Pages 识别，用于设置 `index.html` 的短缓存与安全响应头。
 
-### GitHub Pages
+### GitHub Pages（备选）
 
 Settings → Pages → Source 选 `main` + `/ (root)`，站点即 `https://linyuanxuan.github.io/RunGPT-2/`。
 
-> 注意：Pages 只负责托管这份介绍页，不会运行 `app.py`。真正的 GPT-2 推理始终在你本机，这里没有后端。
+> 注意：静态托管只负责这份介绍页，不会运行 `app.py`。真正的 GPT-2 推理始终在你本机，这里没有后端。
 
 ## 已知限制
 
